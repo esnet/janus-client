@@ -19,19 +19,15 @@ def pytest_addoption(parser):
 def janus_client():
     return Client(url=BASE_URL, auth=AUTH, verify=VERIFY_SSL)
 
-# -------------------------
-# NODE Fixture
-# -------------------------
 @pytest.fixture
 def node_fixture(request, janus_client):
     node_name = request.config.getoption("--node")
     if node_name:
         yield node_name
     else:
-        existing_nodes = janus_client.nodes()
-        print(f"=========existing_nodes============{existing_nodes}")
+        existing_nodes = janus_client.nodes().json()
         if existing_nodes:
-            yield (existing_nodes)
+            yield existing_nodes
         else:
             node_data = {
                 "name": "pytest-node",
@@ -40,27 +36,27 @@ def node_fixture(request, janus_client):
                 "type": "docker"
             }
             janus_client.add_node(node_data)
-            yield node_data["name"]
+            yield [node_data]
             janus_client.delete_node(node=node_data["name"])
 
-# -------------------------
-# SESSION Fixture
-# -------------------------
+
 @pytest.fixture
 def session_fixture(request, janus_client):
     aid = request.config.getoption("--aid")
     if aid:
         yield aid
     else:
-        service = {"instances": 1, "image": "ubuntu:20.04", "profile": "default", "kwargs": {}}
-        create_resp = janus_client.create([service]).json()
-        session_id = list(create_resp.keys())[0]
-        yield session_id
-        janus_client.delete(session_id)
+        existing_sessions = janus_client.active().json()
+        if existing_sessions:
+            yield existing_sessions
+        else:
+            service = {"instances": 1, "image": "ubuntu:20.04", "profile": "default", "kwargs": {}}
+            create_resp = janus_client.create([service]).json()
+            session_id = list(create_resp.keys())[0]
+            yield [create_resp]
+            janus_client.delete(session_id)
 
-# -------------------------
-# PROFILE Fixture
-# -------------------------
+
 @pytest.fixture
 def profile_fixture(request, janus_client):
     resource = request.config.getoption("--resource") or "host"
@@ -75,13 +71,24 @@ def profile_fixture(request, janus_client):
         else:
             temp_name = "pytest-profile"
             janus_client.create_profile(resource, temp_name, {"cpu": 2, "memory": "4g"})
-            yield (resource, temp_name)
-            # Cleanup
+            profiles_list = janus_client.profiles(resource=resource).json()
+            yield (resource, profiles_list)
             janus_client.delete_profile(resource, temp_name)
 
-# -------------------------
-# EXEC Fixture
-# -------------------------
+
+@pytest.fixture
+def image_fixture(request, janus_client):
+    image_name = request.config.getoption("--image")
+    if image_name:
+        yield image_name
+    else:
+        existing_images = janus_client.images().json()
+        if existing_images:
+            yield existing_images
+        else:
+            yield []
+
+
 @pytest.fixture
 def exec_fixture(request, janus_client, session_fixture):
     node = request.config.getoption("--node")
