@@ -9,7 +9,6 @@ def pytest_addoption(parser):
     parser.addoption("--node", action="store", default=None)
     parser.addoption("--node_id", action="store", type=int, default=None)
     parser.addoption("--session_id", action="store", type=int, default=None)
-    parser.addoption("--nname", action="store", default=None)
     parser.addoption("--exec_id", action="store", default=None)
     parser.addoption("--container", action="store", default=None)
     parser.addoption("--resource", action="store", default=None)
@@ -161,7 +160,7 @@ def update_profile_fixture(request, janus_client):
 
 @pytest.fixture
 def image_fixture(request, janus_client):
-    image_name = request.config.getoption("--image")
+    image_name = request.config.getoption("--name")
     if image_name:
         yield image_name
     else:
@@ -193,3 +192,45 @@ def exec_fixture(request, janus_client, session_fixture):
         exec_resp = janus_client.exec_create(exec_request).json()
         exec_id = exec_resp.get("Id") or exec_resp.get("id")
         yield (node_name, exec_id)
+
+@pytest.fixture
+def new_exec_fixture(request, janus_client):
+    node_name = request.config.getoption("--node")
+    container_id = request.config.getoption("--container")
+    session_id = None  # For cleanup if we create a session ourselves
+
+    if node_name and container_id:
+        print(f"Using existing container {container_id} on node {node_name}")
+    else:
+        # Create a new session and start it
+        service = {
+            "instances": 1,
+            "image": "ubuntu:20.04",
+            "profile": "default",
+            "kwargs": {}
+        }
+        create_resp = janus_client.create([service]).json()
+        session_id = list(create_resp.keys())[0]
+
+        start_resp = janus_client.start(session_id).json()
+        node_name = list(start_resp[session_id]['services'].keys())[0]
+        container_id = start_resp[session_id]['services'][node_name][0]['container_id']
+
+    # Create the exec request
+    exec_request = {
+        "node": node_name,
+        "container": container_id,
+        "Cmd": ["echo", "hello from exec"],
+        "start": "true",
+        "attach": "true",
+        "tty": "false"
+    }
+    exec_resp = janus_client.exec_create(exec_request).json()
+    exec_id = exec_resp.get("Id") or exec_resp.get("id")
+
+    yield (node_name, exec_id)
+
+    # Cleanup only if we created the session
+    # if session_id:
+    #     janus_client.stop(session_id)
+    #     janus_client.delete(session_id)

@@ -251,7 +251,7 @@ class Client(object):
             kwargs.pop("data", None)
             return requests.delete(url, **kwargs)
         elif op == "PUT":
-            kwargs.pop("data", None)
+            # kwargs.pop("data", None)
             return requests.put(url, **kwargs)
 
 class Session(object):

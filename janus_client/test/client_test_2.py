@@ -27,7 +27,6 @@ def test_sessions_create(janus_client, new_session_fixture):
     assert new_session_fixture is not None
     # Optional: Verify session exists
     # active_sessions = janus_client.active().json()
-    # print(f"========active_sessions in test_sessions_create========{active_sessions}")
     # assert any(new_session_fixture in sess for sess in active_sessions)
 
 def test_sessions_start(janus_client, session_fixture):
@@ -61,7 +60,6 @@ def test_profiles_create(janus_client, new_profile_fixture):
     assert new_profile_fixture is not None
     # Optional: Verify profile exists
     # profiles_list = janus_client.profiles(resource=resource).json()
-    # print(f"==================profiles_list in test_profiles_create========={profiles_list}")
     # assert any(p["name"] == name for p in profiles_list)
 
 # @pytest.mark.profiles
@@ -77,7 +75,6 @@ def test_profiles_get(janus_client, profile_fixture):
 def test_profiles_update(janus_client, update_profile_fixture):
     resource, name, update_settings = update_profile_fixture
     resp = janus_client.update_profile(resource, name, update_settings)
-    # print(f"===============resp in test_profiles_update=================={resp}")
     # print(resp.json())
     # Optional: verify the update took effect
     # updated_profile = janus_client.profiles(resource=resource, name=name).json()
@@ -102,18 +99,21 @@ def test_images_list_all(image_fixture):
     assert isinstance(image_fixture, list)
 
 def test_images_get(janus_client, image_fixture):
+    name = image_fixture
     if not image_fixture:
         pytest.skip("No images available")
-    first_image = image_fixture[0].get("name")
-    resp = janus_client.images(name=first_image)
+    resp = janus_client.images(name=name)
     print(resp.json())
 
 
 # @pytest.mark.exec
-def test_exec_create(janus_client, exec_fixture):
-    node, exec_id = exec_fixture
+def test_exec_create(janus_client, new_exec_fixture):
+    node, exec_id = new_exec_fixture
     assert node is not None
     assert exec_id is not None
+    # Optional: Check exec status
+    resp = janus_client.exec_status(node=node, exec_id=exec_id)
+    print(resp.json())
 
 # @pytest.mark.exec
 def test_exec_status(janus_client, exec_fixture):
