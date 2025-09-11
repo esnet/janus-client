@@ -81,6 +81,8 @@ class Response(object):
                               self._data.json())
 
     def json(self):
+        if not self._data.content:
+            return None
         return self._data.json()
 
     def error(self):
@@ -143,9 +145,9 @@ class Client(object):
             url = "{}/{}".format(url, user)
         return ActiveResponse(self._call("GET", url))
 
-    def active_logs(self, aid, nname, **kwargs):
+    def active_logs(self, session_id, nname, **kwargs):
         params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
-        url = f"{self.url}/active/{aid}/logs/{nname}"
+        url = f"{self.url}/active/{session_id}/logs/{nname}"
         if params:
             url = f"{url}?{params}"
         return Response(self._call("GET", url))
@@ -239,7 +241,7 @@ class Client(object):
     def _call(self, op, url, hdrs=None, data=None, auth=None):
         if not auth:
             auth = self.auth
-        kwargs = {"auth": auth, "verify": self.verify, "headers": hdrs, "data": data, "timeout": 10}
+        kwargs = {"auth": auth, "verify": self.verify, "headers": hdrs, "data": data}
         if op == "POST":
             return requests.post(url, **kwargs)
         elif op == "GET":
