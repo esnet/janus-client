@@ -30,16 +30,6 @@ def node_fixture(request, janus_client):
         existing_nodes = janus_client.nodes().json()
         if existing_nodes:
             yield existing_nodes
-        # else:
-        #     node_data = {
-        #         "name": "pytest-node",
-        #         "url": "tcp://192.168.1.50:2375",
-        #         "public_url": "192.168.1.50",
-        #         "type": "docker"
-        #     }
-        #     janus_client.add_node(node_data)
-        #     yield [node_data]
-        #     janus_client.delete_node(node=node_data["name"]) #cleanup
 
 
 @pytest.fixture
@@ -63,12 +53,6 @@ def session_fixture(request, janus_client):
         existing_sessions = janus_client.active().json()
         if existing_sessions:
             yield existing_sessions
-    #     else:
-    #         service = {"instances": 1, "image": "ubuntu:20.04", "profile": "default", "kwargs": {}}
-    #         create_resp = janus_client.create([service]).json()
-    #         session_id = list(create_resp.keys())[0]
-    #         yield [create_resp]
-    #         janus_client.delete(session_id) #cleanup
 
 @pytest.fixture
 def new_session_fixture(janus_client):
@@ -94,12 +78,7 @@ def profile_fixture(request, janus_client):
         existing_profiles = janus_client.profiles(resource=resource).json()
         if existing_profiles:
             yield (resource, existing_profiles)
-        # else:
-        #     temp_name = "pytest-profile"
-        #     janus_client.create_profile(resource, temp_name, {"cpu": 2, "memory": "4g"})
-        #     profiles_list = janus_client.profiles(resource=resource).json()
-        #     yield (resource, profiles_list)
-        #     janus_client.delete_profile(resource, temp_name) #cleanup
+
 
 @pytest.fixture
 def new_profile_fixture(request, janus_client):
@@ -140,7 +119,7 @@ def update_profile_fixture(request, janus_client):
     if resource == "host":  # ContainerProfile
         update_settings = {
             "cpu": 4,
-            "memory": 4096,
+            "memory": 4294967296,
             "privileged": True
         }
     elif resource == "network":  # NetworkProfile
@@ -204,8 +183,8 @@ def new_exec_fixture(request, janus_client):
     else:
         # Create a new session and start it
         service = {
-            "instances": 1,
-            "image": "ubuntu:20.04",
+            "instances": ["localhost"],
+            "image": "ubuntu:latest",
             "profile": "default",
             "kwargs": {}
         }
@@ -216,21 +195,19 @@ def new_exec_fixture(request, janus_client):
         node_name = list(start_resp[session_id]['services'].keys())[0]
         container_id = start_resp[session_id]['services'][node_name][0]['container_id']
 
-    # Create the exec request
     exec_request = {
         "node": node_name,
         "container": container_id,
         "Cmd": ["echo", "hello from exec"],
-        "start": "true",
-        "attach": "true",
-        "tty": "false"
+        "start": False,
+        "attach": False,
+        "tty": False
     }
     exec_resp = janus_client.exec_create(exec_request).json()
     exec_id = exec_resp.get("Id") or exec_resp.get("id")
-
     yield (node_name, exec_id)
 
-    # Cleanup only if we created the session
+    # Cleanup
     # if session_id:
     #     janus_client.stop(session_id)
     #     janus_client.delete(session_id)

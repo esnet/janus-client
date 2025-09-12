@@ -67,7 +67,6 @@ def test_profiles_get(janus_client, profile_fixture):
     resource, name = profile_fixture
     if not name:
         pytest.skip("No profiles available")
-    # profile_name = profiles[0]['name']
     resp = janus_client.profiles(resource=resource, name=name)
     print(resp.json())
 
@@ -75,7 +74,7 @@ def test_profiles_get(janus_client, profile_fixture):
 def test_profiles_update(janus_client, update_profile_fixture):
     resource, name, update_settings = update_profile_fixture
     resp = janus_client.update_profile(resource, name, update_settings)
-    # print(resp.json())
+    print(resp.json())
     # Optional: verify the update took effect
     # updated_profile = janus_client.profiles(resource=resource, name=name).json()
     # assert updated_profile["settings"] is not None
@@ -84,9 +83,6 @@ def test_profiles_update(janus_client, update_profile_fixture):
 
 # @pytest.mark.profiles
 def test_profiles_delete(janus_client, profile_fixture):
-    # resource = "host"
-    # name = "pytest-delete-profile"
-    # janus_client.create_profile(resource, name, {"cpu": 2, "memory": "4g"})
     resource, name = profile_fixture
     if not name:
         pytest.skip(f"No profile with name {name} available")
