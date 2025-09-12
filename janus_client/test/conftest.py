@@ -8,7 +8,7 @@ VERIFY_SSL = False
 def pytest_addoption(parser):
     parser.addoption("--node", action="store", default=None)
     parser.addoption("--node_id", action="store", type=int, default=None)
-    parser.addoption("--session_id", action="store", type=int, default=None)
+    parser.addoption("--aid", action="store", type=int, default=None)
     parser.addoption("--exec_id", action="store", default=None)
     parser.addoption("--container", action="store", default=None)
     parser.addoption("--resource", action="store", default=None)
@@ -24,7 +24,7 @@ def node_fixture(request, janus_client):
     node_id = request.config.getoption("--node_id")
     if node_name:
         yield node_name
-    if node_id:
+    elif node_id:
         yield node_id
     else:
         existing_nodes = janus_client.nodes().json()
@@ -46,9 +46,10 @@ def new_node_fixture(janus_client):
 
 @pytest.fixture
 def session_fixture(request, janus_client):
-    session_id = request.config.getoption("--session_id")
-    if session_id:
-        yield session_id
+    aid = request.config.getoption("--aid")
+    if aid:
+        existing_session = janus_client.active(aid).json()
+        yield existing_session
     else:
         existing_sessions = janus_client.active().json()
         if existing_sessions:
@@ -63,9 +64,9 @@ def new_session_fixture(janus_client):
         "kwargs": {}
     }
     create_resp = janus_client.create([service]).json()
-    session_id = list(create_resp.keys())[0]
-    yield session_id
-    # janus_client.delete(session_id)  # Cleanup
+    aid = list(create_resp.keys())[0]
+    yield aid
+    # janus_client.delete(aid)  # Cleanup
 
 
 @pytest.fixture
@@ -176,7 +177,7 @@ def exec_fixture(request, janus_client, session_fixture):
 def new_exec_fixture(request, janus_client):
     node_name = request.config.getoption("--node")
     container_id = request.config.getoption("--container")
-    session_id = None  # For cleanup if we create a session ourselves
+    aid = None  # For cleanup if we create a session ourselves
 
     if node_name and container_id:
         print(f"Using existing container {container_id} on node {node_name}")
@@ -189,11 +190,11 @@ def new_exec_fixture(request, janus_client):
             "kwargs": {}
         }
         create_resp = janus_client.create([service]).json()
-        session_id = list(create_resp.keys())[0]
+        aid = list(create_resp.keys())[0]
 
-        start_resp = janus_client.start(session_id).json()
-        node_name = list(start_resp[session_id]['services'].keys())[0]
-        container_id = start_resp[session_id]['services'][node_name][0]['container_id']
+        start_resp = janus_client.start(aid).json()
+        node_name = list(start_resp[aid]['services'].keys())[0]
+        container_id = start_resp[aid]['services'][node_name][0]['container_id']
 
     exec_request = {
         "node": node_name,
@@ -208,6 +209,6 @@ def new_exec_fixture(request, janus_client):
     yield (node_name, exec_id)
 
     # Cleanup
-    # if session_id:
-    #     janus_client.stop(session_id)
-    #     janus_client.delete(session_id)
+    # if aid:
+    #     janus_client.stop(aid)
+    #     janus_client.delete(aid)

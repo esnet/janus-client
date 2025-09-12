@@ -159,9 +159,15 @@ class Client(object):
         url = f"{self.url}{ep}"
         return Response(self._call("DELETE", url))
 
-    def nodes(self, refresh=False):
+    def nodes(self, node=None, node_id=None, refresh=False):
+        if node and node_id:
+            raise ValueError("Specify either node or node_id, not both")
         ep = '/nodes'
-        if refresh:
+        if node:
+            ep = f"{ep}/{node}"
+        elif node_id:
+            ep = f"{ep}/{node_id}"
+        elif refresh:
             ep = f"{ep}?refresh=true"
         url = f"{self.url}{ep}"
         return NodeResponse(self._call("GET", url))
