@@ -107,13 +107,13 @@ def test_profiles_delete(janus_client, profile_fixture):
     print(resp.json())
 
 
-def test_images_list_and_get(janus_client, image_fixture):
+def test_images_get(janus_client, image_fixture):
     if isinstance(image_fixture, list):
         #List all images
         print("Images:", image_fixture)
         assert isinstance(image_fixture, list)
         if not image_fixture:
-            pytest.skip("No images available for get test")
+            pytest.skip("No images available")
     else:
         #Get a specific image
         resp = janus_client.images(name=image_fixture)
@@ -138,9 +138,9 @@ def test_exec_status(janus_client, exec_fixture):
 
 
 def test_active_logs(janus_client, session_fixture):
-    if isinstance(session_fixture, list):
-        pytest.skip("Skipping logs — fixture returned list of sessions")
-    start_resp = janus_client.start(session_fixture).json()
-    node_name = list(start_resp[session_fixture]['services'].keys())[0]
+    # if isinstance(session_fixture, list):
+    #     pytest.skip("Skipping logs — fixture returned list of sessions")
+    # start_resp = janus_client.start(session_fixture).json()
+    # node_name = list(start_resp[session_fixture]['services'].keys())[0]
     resp = janus_client.active_logs(aid=session_fixture, nname=node_name, stdout=1, stderr=1, tail=10)
     print(resp.json())

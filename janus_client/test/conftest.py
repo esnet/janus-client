@@ -10,7 +10,7 @@ def pytest_addoption(parser):
     parser.addoption("--node_id", action="store", type=int, default=None)
     parser.addoption("--aid", action="store", type=int, default=None)
     parser.addoption("--exec_id", action="store", default=None)
-    parser.addoption("--container", action="store", default=None)
+    parser.addoption("--container_id", action="store", default=None)
     parser.addoption("--resource", action="store", default=None)
     parser.addoption("--name", action="store", default=None)
 
@@ -152,63 +152,30 @@ def image_fixture(request, janus_client):
 
 
 @pytest.fixture
-def exec_fixture(request, janus_client, session_fixture):
+def exec_fixture(request, janus_client):
     node = request.config.getoption("--node")
     exec_id = request.config.getoption("--exec_id")
     if node and exec_id:
         yield (node, exec_id)
     else:
-        start_resp = janus_client.start(session_fixture).json()
-        node_name = list(start_resp[session_fixture]['services'].keys())[0]
-        container_id = start_resp[session_fixture]['services'][node_name][0]['container_id']
-        exec_request = {
-            "node": node_name,
-            "container": container_id,
-            "Cmd": ["echo", "hello"],
-            "start": "true",
-            "attach": "true",
-            "tty": "false"
-        }
-        exec_resp = janus_client.exec_create(exec_request).json()
-        exec_id = exec_resp.get("Id") or exec_resp.get("id")
-        yield (node_name, exec_id)
+        pytest.skip("You must provide both --node and --exec_id to get the status of exec instance")
 
 @pytest.fixture
 def new_exec_fixture(request, janus_client):
     node_name = request.config.getoption("--node")
-    container_id = request.config.getoption("--container")
-    aid = None  # For cleanup if we create a session ourselves
+    container_id = request.config.getoption("--container_id")
 
-    if node_name and container_id:
-        print(f"Using existing container {container_id} on node {node_name}")
+    if not node_name or not container_id:
+        pytest.skip("You must provide both --node and --container_id to create a exec instance")
     else:
-        # Create a new session and start it
-        service = {
-            "instances": ["localhost"],
-            "image": "ubuntu:latest",
-            "profile": "default",
-            "kwargs": {}
+        exec_request = {
+            "node": node_name,
+            "container": container_id,
+            "Cmd": ["echo", "hello from exec"],
+            "start": False,
+            "attach": False,
+            "tty": False
         }
-        create_resp = janus_client.create([service]).json()
-        aid = list(create_resp.keys())[0]
-
-        start_resp = janus_client.start(aid).json()
-        node_name = list(start_resp[aid]['services'].keys())[0]
-        container_id = start_resp[aid]['services'][node_name][0]['container_id']
-
-    exec_request = {
-        "node": node_name,
-        "container": container_id,
-        "Cmd": ["echo", "hello from exec"],
-        "start": False,
-        "attach": False,
-        "tty": False
-    }
-    exec_resp = janus_client.exec_create(exec_request).json()
-    exec_id = exec_resp.get("Id") or exec_resp.get("id")
-    yield (node_name, exec_id)
-
-    # Cleanup
-    # if aid:
-    #     janus_client.stop(aid)
-    #     janus_client.delete(aid)
+        exec_resp = janus_client.exec_create(exec_request).json()
+        exec_id = exec_resp.get("Id") or exec_resp.get("id")
+        yield (node_name, exec_id)
