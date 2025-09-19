@@ -138,9 +138,11 @@ def test_exec_status(janus_client, exec_fixture):
 
 
 def test_active_logs(janus_client, session_fixture):
-    # if isinstance(session_fixture, list):
-    #     pytest.skip("Skipping logs — fixture returned list of sessions")
-    # start_resp = janus_client.start(session_fixture).json()
-    # node_name = list(start_resp[session_fixture]['services'].keys())[0]
-    resp = janus_client.active_logs(aid=session_fixture, nname=node_name, stdout=1, stderr=1, tail=10)
-    print(resp.json())
+    session_info = session_fixture
+    session_id = session_info['id']
+    node_name = session_info['request'][0]['instances'][0]
+    if isinstance(session_fixture, list):
+        pytest.skip("Skipping logs — provide session ID using --aid flag")
+    else:
+        resp = janus_client.active_logs(Id=session_id, nname=node_name, stdout=1, stderr=1, tail=100)
+        print(resp.json())

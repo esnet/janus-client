@@ -145,9 +145,9 @@ class Client(object):
             url = "{}/{}".format(url, user)
         return ActiveResponse(self._call("GET", url))
 
-    def active_logs(self, session_id, nname, **kwargs):
+    def active_logs(self, Id, nname, **kwargs):
         params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
-        url = f"{self.url}/active/{session_id}/logs/{nname}"
+        url = f"{self.url}/active/{Id}/logs/{nname}"
         if params:
             url = f"{url}?{params}"
         return Response(self._call("GET", url))
