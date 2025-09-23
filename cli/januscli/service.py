@@ -10,10 +10,10 @@ SRV_ACTIONS = ['create', 'start', 'stop', 'del']
 SRV_OPTIONS = {'-f': False}
 
 def handle_service(client, args, cfg):
-    parts = args.split(" ")
     if not args:
-        cout.item(f"No argument, session options: {SRV_OPTS}")
+        cout.item(f"No argument, session options: {SRV_OPTIONS}")
         return
+    parts = args.split(" ")
     if parts[0] not in SRV_ACTIONS:
         cout.error(f"Unknown service option \"{parts[0]}\"")
         return
@@ -26,8 +26,8 @@ def handle_service(client, args, cfg):
     if parts[0] == "create":
         try:
             instances = parts[1].split(",")
-            image = parts[3]
-            profile = parts[5]
+            image = parts[2]
+            profile = parts[3]
 
             sess = client.getSession()
             srv = Service(instances=instances,
