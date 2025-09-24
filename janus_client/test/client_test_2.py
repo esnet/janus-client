@@ -1,3 +1,63 @@
+"""
+Pytest Test Suite for Janus Client
+==================================
+
+This file contains functional tests for the Janus Client API.
+Tests cover nodes, sessions, profiles, images, exec commands, and logs.
+
+Prerequisites
+-------------
+1. Ensure the Janus API server is running and accessible.
+2. Update BASE_URL, AUTH, and VERIFY_SSL in `conftest.py` if needed.
+3. Install dependencies:
+    pip install pytest requests
+
+Running All Tests
+-----------------
+Run the entire test suite:
+    pytest -v client_test_2.py
+
+Running Specific Tests
+----------------------
+Run a single test by name:
+    pytest -v -k test_nodes_list_all client_test_2.py
+
+Using CLI Options for Fixtures
+------------------------------
+Many fixtures in `conftest.py` accept command-line options to control behavior:
+
+    --node <node_name>        Use a specific node name for node tests
+    --node_id <node_id>       Use a specific node ID for node tests
+    --aid <session_id>        Use a specific session ID for session tests
+    --name <resource_name>    Use a specific profile or image name
+    --resource <type>         Resource type for profiles ("host", "network", "volume")
+    --exec_id <exec_id>       Use a specific exec ID for exec tests
+    --container <container_id> Use a specific container ID for exec tests
+
+Examples:
+---------
+List all nodes:
+    pytest -v -k test_nodes_list_all
+
+Get details for a specific node:
+    pytest -v -k test_nodes_get --node my-node
+
+List all profiles for a resource:
+    pytest -v -k test_profiles_list_all --resource host
+
+Update a specific profile:
+    pytest -v -k test_profiles_update --resource host --name my-profile
+
+Run exec create on an existing container:
+    pytest -v -k test_exec_create --node my-node --container abcd1234
+
+Notes
+-----
+- If no CLI option is provided, fixtures will try to use existing resources.
+- If no resources exist, some fixtures will create temporary ones for testing.
+- Tests that require a specific resource may skip if the fixture returns a list instead of a single ID/name.
+"""
+
 import pytest
 
 
