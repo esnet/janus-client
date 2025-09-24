@@ -20,7 +20,7 @@ Run the entire test suite:
 Running Specific Tests
 ----------------------
 Run a single test by name:
-    pytest -v -k test_nodes_list_all client_test_2.py
+    pytest client_test_2.py -v -s -k test_nodes_get
 
 Using CLI Options for Fixtures
 ------------------------------
@@ -37,19 +37,19 @@ Many fixtures in `conftest.py` accept command-line options to control behavior:
 Examples:
 ---------
 List all nodes:
-    pytest -v -k test_nodes_list_all
+     pytest client_test_2.py -v -s -k test_nodes_get
 
 Get details for a specific node:
-    pytest -v -k test_nodes_get --node my-node
+    pytest client_test_2.py -v -s -k test_nodes_get --node my-node
 
 List all profiles for a resource:
-    pytest -v -k test_profiles_list_all --resource host
+    pytest client_test_2.py -v -s -k test_profiles_get --resource host
 
 Update a specific profile:
-    pytest -v -k test_profiles_update --resource host --name my-profile
+    pytest client_test_2.py -v -s -k test_profiles_update --resource host --name my-profile
 
 Run exec create on an existing container:
-    pytest -v -k test_exec_create --node my-node --container abcd1234
+    pytest client_test_2.py -v -s -k test_exec_create --node my-node --container abcd1234
 
 Notes
 -----
