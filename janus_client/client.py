@@ -90,6 +90,9 @@ class Response(object):
             return True
         else:
             return False
+    @property
+    def status_code(self):
+        return self._data.status_code
 
 class StartResponse(Response):
     pass
@@ -120,13 +123,15 @@ class ActiveResponse(Response):
         return ret
 
 class Client(object):
-    def __init__(self, url=None, auth=None, verify=False):
+    def __init__(self, url=None, auth=None, verify=False, timeout=None):
         self.url = "{}{}".format(url, API_PREFIX)
         self.auth = auth
         self.verify = verify
         if not self.verify:
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        self.timeout = timeout
 
     def setURL(self, url):
         self.url = url
@@ -137,12 +142,14 @@ class Client(object):
     def config(self):
         print("URL: {}".format(self.url))
 
-    def active(self, Id=None, user=None):
+    def active(self, Id=None, user=None, name=None):
         url = "{}{}".format(self.url, '/active')
         if Id:
             url = "{}/{}".format(url, Id)
         elif user:
             url = "{}/{}".format(url, user)
+        elif name:
+            url = "{}/{}".format(url, name)
         return ActiveResponse(self._call("GET", url))
 
     def active_logs(self, Id, nname, **kwargs):
@@ -187,10 +194,14 @@ class Client(object):
             raise ValueError("Must specify either node name or node_id")
         return Response(self._call("DELETE", url))
 
-    def create(self, req):
+    def create(self, req, name=None):
         hdr = {"Content-type": "application/json"}
         payload = json.dumps(req)
         url = f"{self.url}/create"
+
+        if name:
+            url = f"{url}/{name}"
+
         return Response(self._call("POST", url, hdr, payload))
 
     def start(self, id):
@@ -244,6 +255,14 @@ class Client(object):
         url = f"{self.url}/profiles/{resource}/{name}"
         return Response(self._call("DELETE", url))
 
+    def update_users(self, resource_type, resource, users=None, groups=None):
+        hdr = {"Content-type": "application/json"}
+        url = f"{self.url}/auth/{resource_type}/{resource}"
+        users = users or []
+        groups = groups or []
+        payload = json.dumps({"users": users, "groups": groups})
+        return Response(self._call("POST", url, hdr, payload))
+
     def _call(self, op, url, hdrs=None, data=None, auth=None):
         if not auth:
             auth = self.auth
@@ -252,7 +271,7 @@ class Client(object):
             return requests.post(url, **kwargs)
         elif op == "GET":
             kwargs.pop("data", None)
-            return requests.get(url, **kwargs)
+            return requests.get(url, timeout=self.timeout, **kwargs)
         elif op == "DELETE":
             kwargs.pop("data", None)
             return requests.delete(url, **kwargs)
