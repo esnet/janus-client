@@ -81,6 +81,8 @@ class Response(object):
                               self._data.json())
 
     def json(self):
+        if not self._data.content:
+            return None
         return self._data.json()
 
     def error(self):
@@ -88,6 +90,9 @@ class Response(object):
             return True
         else:
             return False
+    @property
+    def status_code(self):
+        return self._data.status_code
 
 class StartResponse(Response):
     pass
@@ -118,13 +123,15 @@ class ActiveResponse(Response):
         return ret
 
 class Client(object):
-    def __init__(self, url=None, auth=None, verify=False):
+    def __init__(self, url=None, auth=None, verify=False, timeout=None):
         self.url = "{}{}".format(url, API_PREFIX)
         self.auth = auth
         self.verify = verify
         if not self.verify:
             import urllib3
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+        self.timeout = timeout
 
     def setURL(self, url):
         self.url = url
@@ -133,63 +140,144 @@ class Client(object):
         return Session(self, clone)
 
     def config(self):
-        print ("URL: ".format(self.url))
+        print("URL: {}".format(self.url))
 
-    def profiles(self, refresh=False):
-        ep = '/profiles'
-        if refresh:
-            ep = "{}{}".format(ep, "?refresh=true")
-        url = "{}{}".format(self.url, ep)
-        return ProfileResponse(self._call("GET", url))
-
-    def nodes(self, refresh=False):
-        ep = '/nodes'
-        if refresh:
-            ep = "{}{}".format(ep, "?refresh=true")
-        url = "{}{}".format(self.url, ep)
-        return NodeResponse(self._call("GET", url))
-
-    def create(self, req):
-        hdr = {"Content-type": "application/json"}
-        payload = json.dumps(req)
-        url = "{}{}".format(self.url, '/create')
-        return Response(self._call("POST", url, hdr, payload))
-
-    def start(self, id):
-        url = "{}{}/{}".format(self.url, '/start', id)
-        return Response(self._call("PUT", url))
-
-    def stop(self, id):
-        url = "{}{}/{}".format(self.url, '/stop', id)
-        return Response(self._call("PUT", url))
-
-    def delete(self, Id, force=False):
-        ep = '/active/{}'.format(Id)
-        if force:
-            ep = "{}{}".format(ep, "?force=true")
-        url = "{}{}".format(self.url, ep)
-        return Response(self._call("DELETE", url))
-
-    def active(self, Id=None, user=None):
+    def active(self, Id=None, user=None, name=None):
         url = "{}{}".format(self.url, '/active')
         if Id:
             url = "{}/{}".format(url, Id)
         elif user:
             url = "{}/{}".format(url, user)
+        elif name:
+            url = "{}/{}".format(url, name)
         return ActiveResponse(self._call("GET", url))
+
+    def active_logs(self, Id, nname, **kwargs):
+        params = "&".join([f"{k}={v}" for k, v in kwargs.items()])
+        url = f"{self.url}/active/{Id}/logs/{nname}"
+        if params:
+            url = f"{url}?{params}"
+        return Response(self._call("GET", url))
+
+    def delete(self, Id, force=False):
+        ep = f'/active/{Id}'
+        if force:
+            ep = f"{ep}?force=true"
+        url = f"{self.url}{ep}"
+        return Response(self._call("DELETE", url))
+
+    def nodes(self, node=None, node_id=None, refresh=False):
+        if node and node_id:
+            raise ValueError("Specify either node or node_id, not both")
+        ep = '/nodes'
+        if node:
+            ep = f"{ep}/{node}"
+        elif node_id:
+            ep = f"{ep}/{node_id}"
+        elif refresh:
+            ep = f"{ep}?refresh=true"
+        url = f"{self.url}{ep}"
+        return NodeResponse(self._call("GET", url))
+
+    def add_node(self, node_data):
+        hdr = {"Content-type": "application/json"}
+        payload = json.dumps(node_data)
+        url = f"{self.url}/nodes"
+        return Response(self._call("POST", url, hdr, payload))
+
+    def delete_node(self, node=None, node_id=None):
+        if node:
+            url = f"{self.url}/nodes/{node}"
+        elif node_id:
+            url = f"{self.url}/nodes/{node_id}"
+        else:
+            raise ValueError("Must specify either node name or node_id")
+        return Response(self._call("DELETE", url))
+
+    def create(self, req, name=None):
+        hdr = {"Content-type": "application/json"}
+        payload = json.dumps(req)
+        url = f"{self.url}/create"
+
+        if name:
+            url = f"{url}/{name}"
+
+        return Response(self._call("POST", url, hdr, payload))
+
+    def start(self, id):
+        url = f"{self.url}/start/{id}"
+        return Response(self._call("PUT", url))
+
+    def stop(self, id):
+        url = f"{self.url}/stop/{id}"
+        return Response(self._call("PUT", url))
+
+    def exec_create(self, exec_request):
+        hdr = {"Content-type": "application/json"}
+        payload = json.dumps(exec_request)
+        url = f"{self.url}/exec"
+        return Response(self._call("POST", url, hdr, payload))
+
+    def exec_status(self, node, exec_id):
+        url = f"{self.url}/exec?node={node}&exec_id={exec_id}"
+        return Response(self._call("GET", url))
+
+    def images(self, name=None):
+        url = f"{self.url}/images"
+        if name:
+            url = f"{url}/{name}"
+        return Response(self._call("GET", url))
+
+    def profiles(self, resource=None, name=None, refresh=False):
+        if resource and name:
+            url = f"{self.url}/profiles/{resource}/{name}"
+        elif resource:
+            url = f"{self.url}/profiles/{resource}"
+        else:
+            url = f"{self.url}/profiles"
+        if refresh:
+            url += "?refresh=true"
+        return ProfileResponse(self._call("GET", url))
+
+    def create_profile(self, resource, name, settings):
+        hdr = {"Content-type": "application/json"}
+        payload = json.dumps({"settings": settings})
+        url = f"{self.url}/profiles/{resource}/{name}"
+        return Response(self._call("POST", url, hdr, payload))
+
+    def update_profile(self, resource, name, settings):
+        hdr = {"Content-type": "application/json"}
+        payload = json.dumps({"settings": settings})
+        url = f"{self.url}/profiles/{resource}/{name}"
+        return Response(self._call("PUT", url, hdr, payload))
+
+    def delete_profile(self, resource, name):
+        url = f"{self.url}/profiles/{resource}/{name}"
+        return Response(self._call("DELETE", url))
+
+    def update_users(self, resource_type, resource, users=None, groups=None):
+        hdr = {"Content-type": "application/json"}
+        url = f"{self.url}/auth/{resource_type}/{resource}"
+        users = users or []
+        groups = groups or []
+        payload = json.dumps({"users": users, "groups": groups})
+        return Response(self._call("POST", url, hdr, payload))
 
     def _call(self, op, url, hdrs=None, data=None, auth=None):
         if not auth:
             auth = self.auth
+        kwargs = {"auth": auth, "verify": self.verify, "headers": hdrs, "data": data}
         if op == "POST":
-            return requests.post(url, headers=hdrs, data=data,
-                                 auth=auth, verify=self.verify)
+            return requests.post(url, **kwargs)
         elif op == "GET":
-            return requests.get(url, auth=auth, verify=self.verify)
+            kwargs.pop("data", None)
+            return requests.get(url, timeout=self.timeout, **kwargs)
         elif op == "DELETE":
-            return requests.delete(url, auth=auth, verify=self.verify)
+            kwargs.pop("data", None)
+            return requests.delete(url, **kwargs)
         elif op == "PUT":
-            return requests.put(url, auth=auth, verify=self.verify)
+            # kwargs.pop("data", None)
+            return requests.put(url, **kwargs)
 
 class Session(object):
     TMPL="id: {}\nallocated: {}\nrequests: {}\nmanifest: {}\nstate: {}"

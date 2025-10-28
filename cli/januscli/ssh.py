@@ -57,10 +57,10 @@ def ssh_pty(args, cwc):
                                               "-p", cwc['ctrl_port'],
                                               "-l", sshuser], echo=False)
     signal.signal(signal.SIGINT, handler)
-    
+
     t = threading.Thread(target=output_reader, args=(ssh,))
     t.start()
-    
+
     while True:
         try:
             s = sys.stdin.read(1)
