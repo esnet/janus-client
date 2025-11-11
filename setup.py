@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Janus Client',
+    name='janus-dtnaas-client',
     version='0.1',
     description='ESnet Janus Client',
     url='https://github.com/disprosium8/janus-client',
