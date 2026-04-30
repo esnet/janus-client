@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "janus-dtnaas-client"
-version = "0.2.0"
+version = "1.1"
 authors = [
   { name="Ezra Kissel" },
 ]
@@ -29,6 +29,8 @@ dependencies = [
     "pydantic",
     "urllib3",
     "docopt",
+    "libtmux",
+    "ptyprocess",
     "janus-py-client"
 ]
 

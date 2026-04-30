@@ -35,7 +35,7 @@ from janus_client.client import Client
 
 # Initialize the client with Basic Auth
 # (A JWT is automatically acquired and used for subsequent requests)
-client = Client("http://localhost:5001", auth=("admin", "admin_password"))
+client = Client("http://localhost:5000", auth=("admin", "admin_password"))
 
 # Fetch active sessions
 active_sessions = client.status()
@@ -52,7 +52,7 @@ You can launch the interactive shell environment to quickly query the controller
 
 ```bash
 # janus <url> <user> <password>
-janus http://localhost:5001 admin admin_password
+janus http://localhost:5000 admin admin_password
 ```
 
 Once inside the interactive prompt, type `help` to see the available commands.
@@ -73,7 +73,7 @@ EOF  clear  exit  help  quit  refresh
 
 If you've updated the Janus Controller API (e.g. `controller.py` or `models_api.py`), you should regenerate the core `janus-py-client` bindings. 
 
-Make sure your Janus Controller is running locally on port `5001`, and then execute:
+Make sure your Janus Controller is running locally on port `5000`, and then execute:
 
 ```bash
 python generate_client.py

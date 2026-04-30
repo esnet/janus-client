@@ -1,5 +1,3 @@
-import time
-from janus_client import Session, Service, NodeResponse
 from .util import col
 from .ssh import get_pubkeys
 from .util import CText
@@ -18,10 +16,12 @@ def handle_service(client, args, cfg):
         cout.error(f"Unknown service option \"{parts[0]}\"")
         return
 
+    force = False
     if len(parts) > 2:
         for p in parts:
             if p in SRV_OPTIONS.keys():
-                SRV_OPTIONS[p] = True
+                if p == '-f':
+                    force = True
 
     if parts[0] == "create":
         try:
@@ -29,16 +29,19 @@ def handle_service(client, args, cfg):
             image = parts[2]
             profile = parts[3]
 
-            sess = client.getSession()
-            srv = Service(instances=instances,
-                          image=image,
-                          profile=profile,
-                          username='janus',
-                          public_key=get_pubkeys())
-            sess.addService(srv)
-            ret = sess.initialize()
-            cfg['active'].append(ret.json())
-            sid = next(iter(ret.json()))
+            srv_req = {
+                "instances": instances,
+                "image": image,
+                "profile": profile,
+                "kwargs": {
+                    "USER_NAME": "janus",
+                    "PUBLIC_KEY": get_pubkeys()
+                }
+            }
+            
+            res = client.create([srv_req])
+            cfg['active'].append(res)
+            sid = next(iter(res))
             cout.warn(f"Initialized new session with id \"{sid}\"")
             return True
         except Exception as e:
@@ -51,15 +54,18 @@ def handle_service(client, args, cfg):
         try:
             key = parts[1]
             active = cfg['active']
-            res = next((a for a in active if next(iter(a)) == key), None)
-            if res:
+            found = None
+            for a in active:
+                if str(next(iter(a))) == str(key):
+                    found = a
+                    break
+            
+            if found:
                 cout.warn(f"Starting session \"{key}\"")
-            else:
-                cout.error(f"Session not found: \"{key}\"")
-                return False
-
-            ret = client.start(key)
-            res.update(ret.json())
+            
+            res = client.start(int(key))
+            if found:
+                found.update(res)
             return True
         except Exception as e:
             cout.error(f"Could not start session: {e}")
@@ -71,15 +77,18 @@ def handle_service(client, args, cfg):
         try:
             key = parts[1]
             active = cfg['active']
-            res = next((a for a in active if next(iter(a)) == key), None)
-            if res:
-                cout.warn(f"Stopping session \"{key}\"")
-            else:
-                cout.error(f"Session not found: \"{key}\"")
-                return False
+            found = None
+            for a in active:
+                if str(next(iter(a))) == str(key):
+                    found = a
+                    break
 
-            ret = client.stop(key)
-            res.update(ret.json())
+            if found:
+                cout.warn(f"Stopping session \"{key}\"")
+            
+            res = client.stop(int(key))
+            if found:
+                found.update(res)
             return True
         except Exception as e:
             cout.error(f"Could not stop session: {e}")
@@ -91,18 +100,18 @@ def handle_service(client, args, cfg):
         try:
             key = parts[1]
             active = cfg['active']
-            res = next((a for a in active if next(iter(a)) == key), None)
-            if res:
-                cout.warn(f"Deleting session \"{key}\"")
-            else:
-                cout.error(f"Session not found: \"{key}\"")
-                return False
+            found = None
+            for a in active:
+                if str(next(iter(a))) == str(key):
+                    found = a
+                    break
 
-            ret = client.delete(key, force=SRV_OPTIONS['-f'])
-            if ret.error():
-                cout.error(f"Could not clear remote state: {ret}")
-                return False
-            active.remove(res)
+            if found:
+                cout.warn(f"Deleting session \"{key}\"")
+            
+            client.delete(int(key), force=force)
+            if found:
+                active.remove(found)
             return True
         except Exception as e:
             cout.error(f"Could not delete session: {e}")

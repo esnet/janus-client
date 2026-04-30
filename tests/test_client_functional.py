@@ -10,8 +10,11 @@ def test_nodes_get(janus_client, node_fixture):
         assert res is not None
     else:
         # List of nodes returned by fixture default
-        assert isinstance(node_fixture, dict)
-        print(f"Nodes: {list(node_fixture.keys())}")
+        assert isinstance(node_fixture, (list, dict))
+        if isinstance(node_fixture, dict):
+            print(f"Nodes: {list(node_fixture.keys())}")
+        elif isinstance(node_fixture, list):
+            print(f"Nodes: {[n.get('name') for n in node_fixture if isinstance(n, dict)]}")
 
 def test_sessions_get(janus_client, session_fixture):
     assert session_fixture is not None
