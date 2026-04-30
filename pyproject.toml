@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "janus-dtnaas-client"
+version = "0.2.0"
+authors = [
+  { name="Ezra Kissel" },
+]
+description = "ESnet Janus Client"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+keywords = ["dtn", "rest", "controller"]
+dependencies = [
+    "requests",
+    "pydantic",
+    "urllib3",
+    "docopt",
+    "janus-py-client"
+]
+
+[project.scripts]
+janus = "cli.januscli.januscli:main"
+
+[tool.setuptools]
+packages = ["janus_client", "cli", "cli.januscli"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
+]
+testpaths = ["tests"]
